@@ -11,6 +11,7 @@ class Program
 {
     static void Main(string[] args)
     {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
         // Solicitar informacoes ao usuario
         Console.Write("Digite o nome do projeto: ");
         string? projectName = Console.ReadLine();
@@ -134,6 +135,7 @@ class Program
         Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Infra", "Migrations"));
         Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Infra", "Seguranca"));
         Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Infra", "Services"));
+        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Infra", "Repositories")); // Adicionando pasta Repositories
 
         Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Comunicacao", "Enums"));
         Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Comunicacao", "Requests"));
@@ -198,10 +200,51 @@ namespace " + projectName + @".Infra.DataAccess {
     }
 }");
 
+        File.WriteAllText(Path.Combine(srcDir, projectName + ".Infra", "Repositories", "IUsuarioRepository.cs"), @"
+using " + projectName + @".Dominio.Entidades;
+using System.Threading.Tasks;
+
+namespace " + projectName + @".Infra.Repositories
+{
+    public interface IUsuarioRepository
+    {
+        Task AdicionarUsuarioAsync(Usuario usuario);
+        // Adicione outros métodos conforme necessário
+    }
+}");
+
+        File.WriteAllText(Path.Combine(srcDir, projectName + ".Infra", "Repositories", "UsuarioRepository.cs"), @"
+using " + projectName + @".Dominio.Entidades;
+using " + projectName + @".Infra.DataAccess;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
+
+namespace " + projectName + @".Infra.Repositories
+{
+    public class UsuarioRepository : IUsuarioRepository
+    {
+        private readonly AppDbContext _context;
+
+        public UsuarioRepository(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task AdicionarUsuarioAsync(Usuario usuario)
+        {
+            await _context.Usuarios.AddAsync(usuario);
+            await _context.SaveChangesAsync();
+        }
+
+        // Implemente outros métodos conforme necessário
+    }
+}");
+
         File.WriteAllText(Path.Combine(srcDir, projectName + ".Aplicacao", "UseCase", "AdicionarUsuarioUseCase.cs"), @"
 using System.Threading.Tasks;
 using " + projectName + @".Dominio.Entidades;
-using " + projectName + @".Infra.DataAccess;
+using " + projectName + @".Infra.Repositories;
+
 namespace " + projectName + @".Aplicacao.UseCase {
     public class AdicionarUsuarioUseCase {
         private readonly IUsuarioRepository _usuarioRepository;
@@ -220,6 +263,7 @@ using " + projectName + @".Aplicacao.UseCase;
 using " + projectName + @".Comunicacao.Requests;
 using " + projectName + @".Comunicacao.Responses;
 using AutoMapper;
+
 namespace " + projectName + @".API.Controllers {
     [ApiController]
     [Route(""api/[controller]"")]
@@ -262,19 +306,32 @@ namespace " + projectName + @".Comunicacao.Responses {
 using Microsoft.EntityFrameworkCore;
 using " + projectName + @".Infra.DataAccess;
 using " + projectName + @".Aplicacao.UseCase;
+using " + projectName + @".Infra.Repositories;
 using AutoMapper;
+
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString(""DefaultConnection"");
-builder.Services.AddDbContext<AppDbContext>(options => options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
+builder.Services.AddDbContext<AppDbContext>(options => 
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
+);
+
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<AdicionarUsuarioUseCase>();
 builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddControllers();
+
 var app = builder.Build();
-if (app.Environment.IsDevelopment()) { app.UseDeveloperExceptionPage(); }
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
 ApplyMigrations(app);
 app.Run();
 
@@ -307,7 +364,7 @@ namespace " + projectName + @".Infra.Seguranca {
                 Subject = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email) }),
                 Expires = DateTime.UtcNow.AddMinutes(double.Parse(_expDate)),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
+};
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
