@@ -53,12 +53,19 @@ class Program
             Directory.CreateDirectory(srcDir);
 
             // Criar projetos dentro do diretorio src
-            RunCommand("dotnet", $"new webapi -n {projectName}.API --use-controllers -o {Path.Combine(srcDir, projectName + ".API")}");
-            RunCommand("dotnet", $"new classlib -n {projectName}.Aplicacao -o {Path.Combine(srcDir, projectName + ".Aplicacao")}");
-            RunCommand("dotnet", $"new classlib -n {projectName}.Dominio -o {Path.Combine(srcDir, projectName + ".Dominio")}");
-            RunCommand("dotnet", $"new classlib -n {projectName}.Infra -o {Path.Combine(srcDir, projectName + ".Infra")}");
-            RunCommand("dotnet", $"new classlib -n {projectName}.Comunicacao -o {Path.Combine(srcDir, projectName + ".Comunicacao")}");
-            RunCommand("dotnet", $"new classlib -n {projectName}.Exception -o {Path.Combine(srcDir, projectName + ".Exception")}");
+            RunCommand("dotnet", $"new webapi -n {projectName}.API --use-controllers --no-restore -o {Path.Combine(srcDir, projectName + ".API")}");
+            RunCommand("dotnet", $"new classlib -n {projectName}.Aplicacao --no-restore -o {Path.Combine(srcDir, projectName + ".Aplicacao")}");
+            RunCommand("dotnet", $"new classlib -n {projectName}.Dominio --no-restore -o {Path.Combine(srcDir, projectName + ".Dominio")}");
+            RunCommand("dotnet", $"new classlib -n {projectName}.Infra --no-restore -o {Path.Combine(srcDir, projectName + ".Infra")}");
+            RunCommand("dotnet", $"new classlib -n {projectName}.Comunicacao --no-restore -o {Path.Combine(srcDir, projectName + ".Comunicacao")}");
+            RunCommand("dotnet", $"new classlib -n {projectName}.Exception --no-restore -o {Path.Combine(srcDir, projectName + ".Exception")}");
+
+            // Remover arquivos Class1.cs dos projetos de class library
+            RemoveDefaultClassFile(srcDir, projectName + ".Aplicacao");
+            RemoveDefaultClassFile(srcDir, projectName + ".Dominio");
+            RemoveDefaultClassFile(srcDir, projectName + ".Infra");
+            RemoveDefaultClassFile(srcDir, projectName + ".Comunicacao");
+            RemoveDefaultClassFile(srcDir, projectName + ".Exception");
 
             // Criar estrutura de pastas para cada projeto
             CreateDirectoryStructure(srcDir, projectName);
@@ -91,6 +98,16 @@ class Program
         }
     }
 
+    static void RemoveDefaultClassFile(string srcDir, string projectName)
+    {
+        string classFilePath = Path.Combine(srcDir, projectName, "Class1.cs");
+        if (File.Exists(classFilePath))
+        {
+            File.Delete(classFilePath);
+            Console.WriteLine($"Arquivo removido: {classFilePath}");
+        }
+    }
+
     static void RunCommand(string command, string args)
     {
         ProcessStartInfo startInfo = new ProcessStartInfo
@@ -114,35 +131,74 @@ class Program
         }
     }
 
-    static void CreateDirectoryStructure(string srcDir, string projectName)
+static void CreateDirectoryStructure(string srcDir, string projectName)
+{
+    // Verificar se o diretório srcDir existe
+    if (!Directory.Exists(srcDir))
     {
-        // Criar estrutura de pastas para cada projeto
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Aplicacao", "AutoMapper"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Aplicacao", "Enums"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Aplicacao", "Reports"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Aplicacao", "UseCase"));
-
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Dominio", "Entidades"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Dominio", "Enums"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Dominio", "Extensoes"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Dominio", "Reports"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Dominio", "Repositories"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Dominio", "Seguranca"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Dominio", "Services"));
-
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Infra", "DataAccess"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Infra", "Extensoes"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Infra", "Migrations"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Infra", "Seguranca"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Infra", "Services"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Infra", "Repositories")); // Adicionando pasta Repositories
-
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Comunicacao", "Enums"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Comunicacao", "Requests"));
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Comunicacao", "Responses"));
-
-        Directory.CreateDirectory(Path.Combine(srcDir, projectName + ".Exception", "ExceptionBase"));
+        Console.WriteLine($"O diretório {srcDir} não existe.");
+        return;
     }
+
+    Console.WriteLine("Criando estrutura de pastas...");
+
+    // Lista de diretórios a serem criados
+    var directoriesToCreate = new List<string>
+    {
+        Path.Combine(srcDir, projectName + ".Aplicacao", "AutoMapper"),
+        Path.Combine(srcDir, projectName + ".Aplicacao", "Enums"),
+        Path.Combine(srcDir, projectName + ".Aplicacao", "Reports"),
+        Path.Combine(srcDir, projectName + ".Aplicacao", "UseCase"),
+        Path.Combine(srcDir, projectName + ".Dominio", "Entidades"),
+        Path.Combine(srcDir, projectName + ".Dominio", "Enums"),
+        Path.Combine(srcDir, projectName + ".Dominio", "Extensoes"),
+        Path.Combine(srcDir, projectName + ".Dominio", "Reports"),
+        Path.Combine(srcDir, projectName + ".Dominio", "Repositories"),
+        Path.Combine(srcDir, projectName + ".Dominio", "Seguranca"),
+        Path.Combine(srcDir, projectName + ".Dominio", "Services"),
+        Path.Combine(srcDir, projectName + ".Infra", "DataAccess"),
+        Path.Combine(srcDir, projectName + ".Infra", "Extensoes"),
+        Path.Combine(srcDir, projectName + ".Infra", "Migrations"),
+        Path.Combine(srcDir, projectName + ".Infra", "Seguranca"),
+        Path.Combine(srcDir, projectName + ".Infra", "Services"),
+        Path.Combine(srcDir, projectName + ".Infra", "Repositories"),
+        Path.Combine(srcDir, projectName + ".Comunicacao", "Enums"),
+        Path.Combine(srcDir, projectName + ".Comunicacao", "Requests"),
+        Path.Combine(srcDir, projectName + ".Comunicacao", "Responses"),
+        Path.Combine(srcDir, projectName + ".Exception", "ExceptionBase")
+    };
+
+    // Criação dos diretórios e arquivos .gitkeep
+    foreach (var dir in directoriesToCreate)
+    {
+        try
+        {
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+                Console.WriteLine($"Diretório criado: {dir}");
+            }
+            else
+            {
+                Console.WriteLine($"Diretório já existe: {dir}");
+            }
+
+            // Adicionar arquivo .gitkeep
+            string gitkeepFilePath = Path.Combine(dir, ".gitkeep");
+            if (!File.Exists(gitkeepFilePath))
+            {
+                File.WriteAllText(gitkeepFilePath, string.Empty);
+                Console.WriteLine($"Arquivo .gitkeep criado em: {gitkeepFilePath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao criar o diretório {dir}: {ex.Message}");
+        }
+    }
+
+    Console.WriteLine("Estrutura de pastas criada com sucesso.");
+}
 
     static void AddProjectReferences(string srcDir, string projectName)
     {
