@@ -262,6 +262,7 @@ using Microsoft.AspNetCore.Mvc;
 using " + projectName + @".Aplicacao.UseCase;
 using " + projectName + @".Comunicacao.Requests;
 using " + projectName + @".Comunicacao.Responses;
+using " + projectName + @".Dominio.Entidades;
 using AutoMapper;
 
 namespace " + projectName + @".API.Controllers {
